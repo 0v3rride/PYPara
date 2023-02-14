@@ -33,7 +33,7 @@ rule XProtect_MACOS_11eaac1
 """
 
 		
-
+import json
 import re
 
 def sDecoder(hString):
@@ -49,7 +49,6 @@ def sDecoder(hString):
 rules = {}
 meta = {}
 strings = {}
-condition = None
 	
 for l in range(0, len(c.split("\n"))):
 	
@@ -83,7 +82,7 @@ for l in range(0, len(c.split("\n"))):
 	
 		
 	strings = {}
-	
+	meta = {}
 	
 
-print(rules)
+print(json.dumps(rules, indent=4))
