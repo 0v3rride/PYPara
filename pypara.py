@@ -30,6 +30,32 @@ rule XProtect_MACOS_11eaac1
     condition:
         filesize < 500KB and $a1 at 0 and 4 of ($b*) and $c1
 }
+
+rule XProtect_MACOS_54d6414
+{
+    meta:
+        description = "MACOS.54d6414"
+        
+    strings:
+        $a = { 23 21 }
+        $b1 = { 6d 6b 74 65 6d 70 }
+        $b2 = { 74 61 69 6c 20 2d 63 20 22}
+        $b3 = { 66 75 6e 7a 69 70 20 2d 22}
+        
+        $b4 = { 63 68 6d 6f 64 20 2b 78 }
+        $b5 = { 6e 6f 68 75 70 }
+        $c1 = { 50 4b 03 04 }
+        
+    condition:
+        filesize < 100KB and $a at 0 and (all of ($b*)) and $c1
+}
+private rule Macho
+{
+    meta:
+        description = "private rule to match Mach-O binaries"
+    condition:
+        uint32(0) == 0xfeedface or uint32(0) == 0xcefaedfe or uint32(0) == 0xfeedfacf or uint32(0) == 0xcffaedfe or uint32(0) == 0xcafebabe or uint32(0) == 0xbebafeca
+}
 """
 
 		
@@ -49,35 +75,43 @@ def sDecoder(hString):
 rules = {}
 meta = {}
 strings = {}
+
+regex = re.compile("^\s{1,}$")
+pFile = "\n".join([i for i in c.split("\n") if not regex.match(i) if i != ""])
 	
-for l in range(0, len(c.split("\n"))):
+for l in range(0, len(pFile.split("\n"))):
 	
-	if len(re.findall("rule", c.split("\n")[l])):
-		rule = c.split("\n")[l].split(" ")[1]
+	if len(re.findall("^rule", pFile.split("\n")[l])):
+		rule = pFile.split("\n")[l].split(" ")[1]
 		rules.update({rule: {}})
 	
-	if len(re.findall("description", c.split("\n")[l])):
-		meta.update({"description": c.split("\n")[l].strip(" ").split("=")[1]})
+	if len(re.findall("^private rule", pFile.split("\n")[l])):
+		rule = pFile.split("\n")[l].split(" ")[2]
+		rules.update({rule: {}})
+	
+	
+	if len(re.findall("description", pFile.split("\n")[l])):
+		meta.update({"description": pFile.split("\n")[l].strip(" ").split("=")[1]})
 		rules[rule].update({"meta": meta})
 		
 	
-	if len(re.findall("strings", c.split("\n")[l])):
+	if len(re.findall("strings", pFile.split("\n")[l])):
 		count = 1
-		while(re.findall("\$\w?\d?\s=\s", c.split("\n")[l+count])):
-			string = " ".join(c.split("\n")[l+count].split(" ")[11:-1]).split(" ")
+		while(re.findall("\$\w?\d?\s=\s", pFile.split("\n")[l+count])):
+			string = " ".join(pFile.split("\n")[l+count].split(" ")[11:-1]).split(" ")
 			dString = sDecoder("".join(string))
 			
 			if dString:
-				strings.update({c.split("\n")[l+count].split(" ")[8]: dString})
+				strings.update({pFile.split("\n")[l+count].split(" ")[8]: dString})
 			else:
-				strings.update({c.split("\n")[l+count].split(" ")[8]: " ".join(string)})
+				strings.update({pFile.split("\n")[l+count].split(" ")[8]: " ".join(string)})
 			
 			count += 1
 			
 		rules[rule].update({"strings": strings})
 	
-	if len(re.findall("condition", c.split("\n")[l])):
-		condition = c.split("\n")[l+1].lstrip()
+	if len(re.findall("condition", pFile.split("\n")[l])):
+		condition = pFile.split("\n")[l+1].lstrip()
 		rules[rule].update({"condition": condition})
 	
 		
