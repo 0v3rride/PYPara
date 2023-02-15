@@ -1,2 +1,2 @@
 # pypara
-Python script that parses .yara files
+A quick and dirty Python script that parses .yara files
